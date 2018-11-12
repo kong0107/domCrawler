@@ -8,11 +8,14 @@ const domCrawler = (
     skip = () => false
 ) => {
     if(skip(node)) return [];
-    let arr = filter(node) ? [node] : [];
-    node.childNodes.forEach(child =>
-        arr = arr.concat(domCrawler(child, filter, skip))
+    return Array.prototype.reduce.call(
+        node.childNodes,
+        (acc, child) => {
+            const append = domCrawler(child, filter, skip);
+            return append.length ? acc.concat(append) : acc;
+        },
+        filter(node) ? [node] : []
     );
-    return arr;
 };
 
 domCrawler.getTextNodes = (node, skip) =>
@@ -57,17 +60,6 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
 domCrawler.replaceTexts = (rules, node, skip) => {
     if(!rules.forEach) rules = [rules];
     domCrawler.getTextNodes(node, skip).forEach(textNode => {
-        /*let splitted = [textNode.textContent];
-        rules.forEach(rule => {
-            for(let i = splitted.length - 1; i >= 0; --i) {
-                const frag = splitted[i];
-                if(typeof frag != "string" || (rule.minLength && frag.length < rule.minLength)) continue;
-                const debris = domCrawler.strSplitAndJoin(frag, rule.pattern, rule.replacer);
-                if(debris.length == 1) continue;
-                splitted.splice(i, 1, ...debris);
-            }
-        });*/
-
         let splitted = rules.reduce((splitted, rule) => {
             for(let i = splitted.length - 1; i >= 0; --i) {
                 const frag = splitted[i];
@@ -79,24 +71,38 @@ domCrawler.replaceTexts = (rules, node, skip) => {
             return splitted;
         }, [textNode.textContent]);
         if(splitted.length == 1) return;
-
-        // Combine adjacent items if they are either texts or text nodes.
-        // This may slow down the process;
-        // however, this may be necessary in case there are some other functions depending on text node detection.
-        splitted = splitted.reduce((acc, cur) => {
-            if(!acc.length) acc = [acc];
-            const li = acc.length - 1;
-            if(typeof acc[li] == "string") {
-                if(typeof cur == "string") acc[li] += cur;
-                else if(cur.nodeType == 3) acc[li] += cur.textContent;
-                else acc.push(cur);
-            }
-            else acc.push(cur);
-            return acc;
-        }, []);
-
         textNode.replaceWith(...splitted);
-    })
+    });
+    node.normalize();
+};
+
+/**
+ * Simulate React.createElement
+ */
+domCrawler.createElement = (type, props, ...children) => {
+    const elem = document.createElement(type);
+    for(let attr in props) {
+        switch(attr) {
+            case "class":
+            case "className":
+                elem.className = props.className;
+                break;
+            case "style":
+                /**
+                 * React implements inline styles with an object whose key is the camelCased version of the style name,
+                 * so here we cannot use CSSStyleDeclaration.setProperty().
+                 * @see {@link https://reactjs.org/docs/dom-elements.html#style|React}
+                 * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleDeclaration/setProperty|MDN}
+                 */
+                if(typeof props.style == "string") elem.style.cssText = props.style;
+                else for(let sp in props.style) elem.style[sp] = props.style[sp];
+                break;
+            default:
+                elem.setAttribute(attr, props[attr]);
+        }
+    }
+    elem.append(...children);
+    return elem;
 };
 
 if(typeof module === 'object') module.exports = domCrawler;
