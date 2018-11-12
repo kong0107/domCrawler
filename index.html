@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://unpkg.com/react@16/umd/react.production.min.js" crossorigin></script>
+    <title>domCrawler demo page</title>
+    <script src="domCrawler.js"></script>
+  </head>
+  <body>
+    <h1>domCrawler demo page</h1>
+    <div id="ppap">
+        <p>I have a pen. I have an apple. Ugh! Apple pen.</p>
+        <p>I have a pen. I have a pineapple. Ugh! Pineapple pen.</p>
+        <p>Apple pen, pineapple pen. Ugh! Pen-pineapple-apple-pen.</p>
+    </div>
+    <button>change</button>
+    <script>
+        const em = document.createElement("EM"); em.append("Yeah!");
+        const rules = [
+            {pattern: 'apple', replacer: 'elephant'},
+            {pattern: 'Ugh!', replacer: em},
+            {pattern: 'have', replacer: str => str.toUpperCase()}
+        ];
+        document.querySelector("button").addEventListener("click", () =>
+            domCrawler.replaceTexts(rules, document.getElementById("ppap"))
+        );
+    </script>
+  </body>
+</html>
