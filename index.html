@@ -14,9 +14,10 @@
         <p>I have a pen. I have a pineapple. Ugh! Pineapple pen.</p>
         <p>Apple pen; pineapple pen. Ugh! Pen-pineapple-apple-pen.</p>
     </div>
-    <button>change</button>
+    <button>Demo domCrawler.replaceTexts</button>
+    <pre></pre>
     <p><a href="https://github.com/kong0107/domCrawler">Go to the project page on GitHub.</a></p>
-    <script>
+    <script id="code">
         const rules = [
             {pattern: 'I', replacer: 'You'},
             {pattern: 'Ugh!', replacer: domCrawler.createElement("EM", null, "Yeah!")},
@@ -31,8 +32,11 @@
             }
         ];
         document.querySelector("button").addEventListener("click", () =>
-            domCrawler.replaceTexts(rules, document.getElementById("ppap"))
+            domCrawler.replaceTexts(rules, document.querySelector("div"))
         );
+    </script>
+    <script>
+        document.querySelector("PRE").textContent = document.getElementById("code").textContent;
     </script>
   </body>
 </html>

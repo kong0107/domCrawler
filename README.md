@@ -1,15 +1,26 @@
 # domCrawler
+
 Traverse all nodes within the specified node.
 
+This module does not support IE yet.
+
+Further instructions are written in `domCrawler.js`.
+
+
 ## Installation
+
 ```html
 <script src="domCrawler.js"></script>
 ```
+
+
 ## Examples
 
 See also [demo page](https://kong0107.github.io/domCrawler/).
 
+
 ### Get nodes
+
 ```javascript
 /// gets an array contains all nodes in document
 nodes = domCrawler();
@@ -29,7 +40,9 @@ nodes = domCrawler.getTextNodes(
 
 ```
 
+
 ### Replaces texts in the webpage
+
 ```javascript
 // replaces all texts in the page
 domCrawler.replaceTexts({
