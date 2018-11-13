@@ -16,10 +16,9 @@
     </div>
     <button>change</button>
     <script>
-        const em = document.createElement("EM"); em.append("Yeah!");
         const rules = [
             {pattern: 'apple', replacer: 'elephant'},
-            {pattern: 'Ugh!', replacer: em},
+            {pattern: 'Ugh!', replacer: domCrawler.createElement("EM", null, "Yeah!")},
             {pattern: 'have', replacer: str => str.toUpperCase()}
         ];
         document.querySelector("button").addEventListener("click", () =>

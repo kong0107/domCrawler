@@ -1,36 +1,78 @@
 /**
- * Traverse all nodes within the specified node.
- * @return Array of nodes which fit filter but not within those fit skip
+ * Get all nodes within the specified node.
+ * @return Array of nodes which fit `accept` but not within those fit `reject`
  */
-const domCrawler = (
-    node = document,
-    filter = () => true,
-    skip = () => false
-) => {
-    if(skip(node)) return [];
-    return Array.prototype.reduce.call(
-        node.childNodes,
-        (acc, child) => {
-            const append = domCrawler(child, filter, skip);
-            return append.length ? acc.concat(append) : acc;
-        },
-        filter(node) ? [node] : []
-    );
-};
-
-domCrawler.getTextNodes = (node, skip) =>
-    domCrawler(node, n => n.nodeType == 3, skip)
+const domCrawler = (node, accept, reject) =>
+    domCrawler.map(node, n => n, accept, reject)
 ;
 
 /**
- * This function has nothing to do with DOM.
+ * Create an object that can be used as a `NodeFilter`.
+ *
+ * To developers:
+ * For the feature of `FILTER_REJECT`, let's use `TreeWalker` instead of `NodeIterator`.
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter }
+ * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html#Traversal-NodeFilter-acceptNode-constants }
+ */
+domCrawler.createFilter = (
+    accept = () => true,
+    reject = () => false
+) => {
+    return {acceptNode: node => {
+        if(reject(node)) return NodeFilter.FILTER_REJECT;
+        if(accept(node)) return NodeFilter.FILTER_ACCEPT;
+        return NodeFilter.FILTER_SKIP;
+    }};
+};
+
+/**
+ * Call the function on filtered nodes and return the results.
+ * Removing the node in the function may interrupt the traversal.
+ * To move some nodes and then traverse throught the origin order, use `domCrawler` to get an array to iterate.
+ * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html#Iterator-Robustness-h4 }
+ */
+domCrawler.map = (node = document, func, accept, reject) => {
+    const treeWalker = document.createTreeWalker(
+        node,
+        NodeFilter.SHOW_ALL,
+        domCrawler.createFilter(accept, reject)
+    );
+    const result = [];
+    while(n = treeWalker.nextNode()) result.push(func(n));
+    return result;
+};
+
+/**
+ * Traverse all text nodes.
+ * Removing the node in the function may interrupt the traversal.
+ * @see domCrawler.map
+ *
+ * To developers:
+ * In `Document.createTreeWalker()`, `filter` is only called on nodes accepted by `whatToShow`.
+ * So do not set `whatToShow` to `SHOW_TEXT` in createTreeWalker;
+ * otherwise you cannot reject anything within the nodes you don't want.
+ */
+domCrawler.mapTextNodes = (node, func, reject) =>
+    domCrawler.map(node, func, n => n.nodeType == 3, reject)
+;
+
+/**
+ * Get all text nodes within the specified node.
+ * @return Array of text nodes in `node` but not within those fit `reject`
+ */
+domCrawler.getTextNodes = (node, reject) =>
+    domCrawler.mapTextNodes(node, n => n, reject)
+;
+
+/**
+ * Replace substrings into whatever, and glue them into an array.
  * @example
  * // returns [{v: "XX"}, "77", {v: "YYY"}]
  * domCrawler.strSplitAndJoin("xx77yyy", /\w+/, x => {v: x.toUpperCase()})
  * @param {string} str
  * @param {string|RegExp} separator
  * @param {*} replacer
- * @return {Array} A merged list of splitted stuff and those returned by replacer by their original order.
+ * @return {Array} A merged list of splitted stuff and those returned by replacer in their original order.
  */
 domCrawler.strSplitAndJoin = (str, separator, replacer) => {
     if(typeof replacer != "function") {
@@ -57,9 +99,9 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
  * @param {*} rules[].replacer
  * @param {number} rules[].minLength
  */
-domCrawler.replaceTexts = (rules, node, skip) => {
+domCrawler.replaceTexts = (rules, node, reject) => {
     if(!rules.forEach) rules = [rules];
-    domCrawler.getTextNodes(node, skip).forEach(textNode => {
+    domCrawler.getTextNodes(node, reject).forEach(textNode => {
         let splitted = rules.reduce((splitted, rule) => {
             for(let i = splitted.length - 1; i >= 0; --i) {
                 const frag = splitted[i];
