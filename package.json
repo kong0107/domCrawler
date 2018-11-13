@@ -1,6 +1,6 @@
 {
   "name": "domCrawler",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Traverse all nodes within the specified node.",
   "keywords": ["DOM", "TreeWalker"],
   "author": "kong0107",
