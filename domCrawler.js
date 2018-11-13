@@ -88,7 +88,16 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
         return result;
     }
     if(!(separator instanceof RegExp)) throw new TypeError("Parameter `separator` must be a string or a RegExp.");
-    throw new TypeError("Sorry, I haven't implemented this function yet.");
+
+    let match, result = [];
+    separator.lastIndex = 0; // in case that the RegExp is for global match
+    while(match = separator.exec(str)) {
+        result.push(str.substring(0, match.index), replacer.apply(str, match));
+        str = str.substring(match.index + match[0].length);
+        separator.lastIndex = 0;
+    }
+    result.push(str);
+    return result;
 };
 
 /**
@@ -99,7 +108,7 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
  * @param {*} rules[].replacer
  * @param {number} rules[].minLength
  */
-domCrawler.replaceTexts = (rules, node, reject) => {
+domCrawler.replaceTexts = (rules, node = document, reject) => {
     if(!rules.forEach) rules = [rules];
     domCrawler.getTextNodes(node, reject).forEach(textNode => {
         let splitted = rules.reduce((splitted, rule) => {
@@ -107,12 +116,12 @@ domCrawler.replaceTexts = (rules, node, reject) => {
                 const frag = splitted[i];
                 if(typeof frag != "string" || (rule.minLength && frag.length < rule.minLength)) continue;
                 const debris = domCrawler.strSplitAndJoin(frag, rule.pattern, rule.replacer);
-                if(debris.length == 1) continue;
+                if(debris.length == 1 && debris[0] == frag) continue;
                 splitted.splice(i, 1, ...debris);
             }
             return splitted;
         }, [textNode.textContent]);
-        if(splitted.length == 1) return;
+        if(splitted.length == 1 && splitted[0] == textNode.textContent) return;
         textNode.replaceWith(...splitted);
     });
     node.normalize();

@@ -11,14 +11,22 @@
     <div id="ppap">
         <p>I have a pen. I have an apple. Ugh! Apple pen.</p>
         <p>I have a pen. I have a pineapple. Ugh! Pineapple pen.</p>
-        <p>Apple pen, pineapple pen. Ugh! Pen-pineapple-apple-pen.</p>
+        <p>Apple pen; pineapple pen. Ugh! Pen-pineapple-apple-pen.</p>
     </div>
     <button>change</button>
     <script>
         const rules = [
-            {pattern: 'apple', replacer: 'elephant'},
+            {pattern: 'I', replacer: 'You'},
             {pattern: 'Ugh!', replacer: domCrawler.createElement("EM", null, "Yeah!")},
-            {pattern: 'have', replacer: str => str.toUpperCase()}
+            {pattern: 'have', replacer: str => str.toUpperCase()},
+            {
+                pattern: /(pine)?apple/i,
+                replacer: ($0, $1) => {
+                    if($0.charAt(0) == $0.charAt(0).toUpperCase())
+                        return $1 ? "Coordination" : "Ordination";
+                    return $1 ? "coordination" : "ordination";
+                }
+            }
         ];
         document.querySelector("button").addEventListener("click", () =>
             domCrawler.replaceTexts(rules, document.getElementById("ppap"))
