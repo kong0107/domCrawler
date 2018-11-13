@@ -103,12 +103,17 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
 /**
  * Replaces texts in the node by the rules specified.
  * To minimize DOM manipulation, let's iterate rules within the iteration of text nodes.
+ * HTML tags SCRIPT and STYLE are skipped if `reject` is not specified.
  * @param {Object[]} rules
  * @param {string|RegExp} rules[].pattern
  * @param {*} rules[].replacer
  * @param {number} rules[].minLength
  */
-domCrawler.replaceTexts = (rules, node = document, reject) => {
+domCrawler.replaceTexts = (
+    rules,
+    node = document,
+    reject = n => ["SCRIPT", "STYLE"].includes(n.tagName)
+) => {
     if(!rules.forEach) rules = [rules];
     domCrawler.getTextNodes(node, reject).forEach(textNode => {
         let splitted = rules.reduce((splitted, rule) => {
