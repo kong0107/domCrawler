@@ -161,6 +161,11 @@ domCrawler.replaceTexts = (
 domCrawler.createElement = (type, props, ...children) => {
     const elem = document.createElement(type);
     for(let attr in props) {
+        if(attr.startsWith("on")) {
+            const type = attr.substring(2).toLowerCase();
+            elem.addEventListener(type, props[attr]);
+            continue;
+        }
         switch(attr) {
             case "class":
             case "className":
