@@ -1,8 +1,23 @@
 {
-  "name": "domCrawler",
+  "name": "domcrawler",
   "version": "1.2.0",
   "description": "Traverse all nodes within the specified node.",
-  "keywords": ["DOM", "TreeWalker"],
+  "keywords": [
+    "DOM",
+    "TreeWalker"
+  ],
   "author": "kong0107",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "domCrawler.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kong0107/domCrawler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kong0107/domCrawler/issues"
+  },
+  "homepage": "https://github.com/kong0107/domCrawler#readme",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
 }
