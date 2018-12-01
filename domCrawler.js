@@ -130,6 +130,18 @@ domCrawler.strSplitAndJoinByRules = (str, rules) => {
 
 
 /**
+ * Replaces texts in one text node by the rules and the wrapper.
+ * @return {Node[]} array of nodes the initial text node is replaced by.
+ */
+domCrawler.replaceTextNode = (textNode, rules, wrapper = null) => {
+    let splitted = domCrawler.strSplitAndJoinByRules(textNode.textContent, rules);
+    if(typeof wrapper === "function") splitted = wrapper.call(textNode, splitted);
+    if(splitted.length === 1 && splitted[0] === textNode.textContent) return;
+    textNode.replaceWith(...splitted);
+};
+
+
+/**
  * Replaces texts in the node by the rules specified.
  * To minimize DOM manipulation, let's iterate rules within the iteration of text nodes.
  * HTML tags SCRIPT and STYLE are skipped if `reject` is not specified.
@@ -145,13 +157,32 @@ domCrawler.replaceTexts = (
     reject = n => ["SCRIPT", "STYLE"].includes(n.tagName),
     wrapper = null
 ) => {
-    domCrawler.getTextNodes(node, reject).forEach(textNode => {
-        let splitted = domCrawler.strSplitAndJoinByRules(textNode.textContent, rules);
-        if(typeof wrapper == "function") splitted = wrapper.call(textNode, splitted);
-        if(splitted.length == 1 && splitted[0] == textNode.textContent) return;
-        textNode.replaceWith(...splitted);
-    });
+    domCrawler.getTextNodes(node, reject).forEach(textNode =>
+        domCrawler.replaceTextNode(textNode, rules, wrapper)
+    );
     node.normalize();
+};
+
+
+/**
+ * Async version of the above.
+ * @param {number} microseconds the process should wait after replacing one text node
+ * @return {Promise} resolves to undefined
+ */
+domCrawler.replaceTextsAsync = (
+    rules,
+    node = document,
+    reject = n => ["SCRIPT", "STYLE"].includes(n.tagName),
+    wrapper = null,
+    delay = 0
+) => {
+    const wait = ms => () => new Promise(resolve => setTimeout(resolve, ms));
+    return domCrawler.getTextNodes(node, reject).map(textNode =>
+        () => domCrawler.replaceTextNode(textNode, rules, wrapper)
+    ).reduce(
+        (acc, cur) => acc.then(cur).then(wait(delay)),
+        Promise.resolve()
+    ).then(() => node.normalize());
 };
 
 
