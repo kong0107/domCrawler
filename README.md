@@ -60,3 +60,8 @@ domCrawler.replaceTexts(
 );
 
 ```
+
+### Changelog
+
+#### 1.3.0
+* Add `domCrawler.replaceTextsAsync`, which is the async version of `domCrawler.replaceTexts` and return a promise which resolves after traverse all text nodes.
