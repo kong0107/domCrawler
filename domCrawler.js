@@ -76,7 +76,9 @@ domCrawler.getTextNodes = (node, reject) =>
  * domCrawler.strSplitAndJoin("xx77yyy", /\w+/, x => {v: x.toUpperCase()})
  * @param {string} str
  * @param {string|RegExp} separator
- * @param {*} replacer
+ * @param {string} replacer
+ * @param {Node} replacer This will be cloned with its attributes and children but without its event listeners.
+ * @param {Function} replacer Similar to what String#replace does.
  * @return {Array} A merged list of splitted stuff and those returned by replacer in their original order.
  */
 domCrawler.strSplitAndJoin = (str, separator, replacer) => {
@@ -97,7 +99,7 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
     let match, result = [];
     separator.lastIndex = 0; // in case that the RegExp is for global match
     while(match = separator.exec(str)) {
-        result.push(str.substring(0, match.index), replacer.apply(str, match));
+        result.push(str.substring(0, match.index), replacer.call(str, ...match, match.index, str));
         str = str.substring(match.index + match[0].length);
         separator.lastIndex = 0;
     }
@@ -188,6 +190,7 @@ domCrawler.replaceTextsAsync = (
 
 /**
  * Simulate React.createElement
+ * actually not related to other functions of this project.
  */
 domCrawler.createElement = (type, props, ...children) => {
     const elem = document.createElement(type);
