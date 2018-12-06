@@ -137,7 +137,7 @@ domCrawler.strSplitAndJoinByRules = (str, rules) => {
  */
 domCrawler.replaceTextNode = (textNode, rules, wrapper = null) => {
     let splitted = domCrawler.strSplitAndJoinByRules(textNode.textContent, rules);
-    if(typeof wrapper === "function") splitted = wrapper.call(textNode, splitted);
+    if(typeof wrapper === "function") splitted = wrapper.call(textNode, splitted, textNode);
     if(splitted.length === 1 && splitted[0] === textNode.textContent) return;
     textNode.replaceWith(...splitted);
 };
@@ -156,7 +156,7 @@ domCrawler.replaceTextNode = (textNode, rules, wrapper = null) => {
 domCrawler.replaceTexts = (
     rules,
     node = document,
-    reject = n => ["SCRIPT", "STYLE"].includes(n.tagName),
+    reject = n => ["SCRIPT", "STYLE"].includes(n.nodeName),
     wrapper = null
 ) => {
     domCrawler.getTextNodes(node, reject).forEach(textNode =>
@@ -174,7 +174,7 @@ domCrawler.replaceTexts = (
 domCrawler.replaceTextsAsync = (
     rules,
     node = document,
-    reject = n => ["SCRIPT", "STYLE"].includes(n.tagName),
+    reject = n => ["SCRIPT", "STYLE"].includes(n.nodeName),
     wrapper = null,
     delay = 0
 ) => {

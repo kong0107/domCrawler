@@ -1,6 +1,6 @@
 {
   "name": "domcrawler",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Traverse all nodes within the specified node.",
   "keywords": [
     "DOM",
@@ -8,7 +8,6 @@
   ],
   "author": "kong0107",
   "license": "MIT",
-  "main": "domCrawler.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kong0107/domCrawler.git"
@@ -16,8 +15,5 @@
   "bugs": {
     "url": "https://github.com/kong0107/domCrawler/issues"
   },
-  "homepage": "https://github.com/kong0107/domCrawler#readme",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  }
+  "homepage": "https://github.com/kong0107/domCrawler#readme"
 }

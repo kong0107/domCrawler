@@ -61,7 +61,14 @@ domCrawler.replaceTexts(
 
 ```
 
-### Changelog
 
-#### 1.3.0
+## Changelog
+
+### 1.3.2
+* Make `wrapper` know which text node it's working on.
+
+### 1.3.1
+*	Users can design `replacer` of rules more like what they do while using `String#replace`.
+
+### 1.3.0
 * Add `domCrawler.replaceTextsAsync`, which is the async version of `domCrawler.replaceTexts` and return a promise which resolves after traverse all text nodes.
