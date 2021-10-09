@@ -1,6 +1,6 @@
 /**
  * Get all nodes within the specified node.
- * @return Array of nodes which fit `accept` but not within those fit `reject`
+ * @returns {Array} nodes which fit `accept` but not within those fit `reject`
  */
 const domCrawler = (node, accept, reject) =>
     domCrawler.map(node, n => n, accept, reject)
@@ -62,7 +62,7 @@ domCrawler.mapTextNodes = (node, func, reject) =>
 
 /**
  * Get all text nodes within the specified node.
- * @return Array of text nodes in `node` but not within those fit `reject`
+ * @returns {Array} text nodes in `node` but not within those fit `reject`
  */
 domCrawler.getTextNodes = (node, reject) =>
     domCrawler.mapTextNodes(node, n => n, reject)
@@ -78,8 +78,8 @@ domCrawler.getTextNodes = (node, reject) =>
  * @param {string|RegExp} separator
  * @param {string} replacer
  * @param {Node} replacer This will be cloned with its attributes and children but without its event listeners.
- * @param {Function} replacer Similar to what String#replace does.
- * @return {Array} A merged list of splitted stuff and those returned by replacer in their original order.
+ * @param {function} replacer Similar to what String#replace does.
+ * @returns {Array} A merged list of splitted stuff and those returned by replacer in their original order.
  */
 domCrawler.strSplitAndJoin = (str, separator, replacer) => {
     if(typeof replacer != "function") {
@@ -113,7 +113,7 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
  * It just applies multi rules to `domCrawler.strSplitAndJoin`.
  * @param {Object[]} rules
  * @param {string|RegExp} rules[].pattern
- * @param {*} rules[].replacer
+ * @param {string|function|Node} rules[].replacer
  * @param {number} rules[].minLength
  */
 domCrawler.strSplitAndJoinByRules = (str, rules) => {
@@ -133,7 +133,7 @@ domCrawler.strSplitAndJoinByRules = (str, rules) => {
 
 /**
  * Replaces texts in one text node by the rules and the wrapper.
- * @return {Node[]} array of nodes the initial text node is replaced by.
+ * @returns {Node[]} array of nodes the initial text node is replaced by.
  */
 domCrawler.replaceTextNode = (textNode, rules, wrapper = null) => {
     let splitted = domCrawler.strSplitAndJoinByRules(textNode.textContent, rules);
@@ -151,7 +151,7 @@ domCrawler.replaceTextNode = (textNode, rules, wrapper = null) => {
  * @param {string|RegExp} rules[].pattern
  * @param {*} rules[].replacer
  * @param {number} rules[].minLength
- * @param {Function} wrapper - This is called on the whole array `strSplitAndJoinByRules` returned. Afterwards the returned array this function returns will replace the origin content of the text node.
+ * @param {function} wrapper - This is called on the whole array `strSplitAndJoinByRules` returned. Afterwards the returned array this function returns will replace the origin content of the text node.
  */
 domCrawler.replaceTexts = (
     rules,
@@ -169,7 +169,7 @@ domCrawler.replaceTexts = (
 /**
  * Async version of the above.
  * @param {number} microseconds the process should wait after replacing one text node
- * @return {Promise} resolves to undefined
+ * @returns {Promise} resolves to undefined
  */
 domCrawler.replaceTextsAsync = (
     rules,
@@ -191,19 +191,29 @@ domCrawler.replaceTextsAsync = (
 /**
  * Simulate React.createElement
  * actually not related to other functions of this project.
+ * @param {Object} [props] attribute-value pairs of the element; attribute names are case insensitive
+ * @param {string} [props.href] href value of the element to be created
+ * @param {string|Array} [props.class] CSS class name list, string seperated by space, or array of strings.
+ * @param {string|Array} [props.classname] synonyms of the above `props.class`
+ * @param {string|Object} [props.style] CSS style in string type or assigned as an property-value pair object
+ * @param {function} [props.onclick] event listener of click event
+ * @param {Object} [props.dataset] custom data attributes of the element to be created
+ * @param {Object} [props.data] synonyms of the above `props.dataset`
+ * @returns {Element}
  */
-domCrawler.createElement = (type, props, ...children) => {
-    const elem = document.createElement(type);
+domCrawler.createElement = (tagName, props = null, ...children) => {
+    const elem = document.createElement(tagName);
     for(let attr in props) {
+        attr = attr.toLowerCase();
         if(attr.startsWith("on")) {
-            const type = attr.substring(2).toLowerCase();
-            elem.addEventListener(type, props[attr]);
+            const eventType = attr.substring(2);
+            elem.addEventListener(eventType, props[attr]);
             continue;
         }
         switch(attr) {
             case "class":
-            case "className":
-                elem.className = props.className;
+            case "classname":
+                elem.className = (typeof props[attr] === "string") ? props[attr] : props[attr].join(" ");
                 break;
             case "data":
             case "dataset":

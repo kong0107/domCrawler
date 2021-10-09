@@ -64,6 +64,9 @@ domCrawler.replaceTexts(
 
 ## Changelog
 
+### 1.3.3
+* Fix the error that `domCrawler.createElement(tagName, {class: "foo"})` did not assgin CSS class name to the element.
+
 ### 1.3.2
 * Make `wrapper` know which text node it's working on.
 
