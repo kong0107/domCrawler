@@ -1,6 +1,6 @@
 {
   "name": "domcrawler",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Traverse all nodes within the specified node.",
   "keywords": [
     "DOM",

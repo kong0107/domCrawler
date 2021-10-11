@@ -204,16 +204,17 @@ domCrawler.replaceTextsAsync = (
 domCrawler.createElement = (tagName, props = null, ...children) => {
     const elem = document.createElement(tagName);
     for(let attr in props) {
+        const value = props[attr];
         attr = attr.toLowerCase();
         if(attr.startsWith("on")) {
             const eventType = attr.substring(2);
-            elem.addEventListener(eventType, props[attr]);
+            elem.addEventListener(eventType, value);
             continue;
         }
         switch(attr) {
             case "class":
             case "classname":
-                elem.className = (typeof props[attr] === "string") ? props[attr] : props[attr].join(" ");
+                elem.className = (typeof value === "string") ? value : value.join(" ");
                 break;
             case "data":
             case "dataset":
@@ -222,7 +223,7 @@ domCrawler.createElement = (tagName, props = null, ...children) => {
                  * Element.setAttribute("data-something", "string value")
                  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset#Syntax }
                  */
-                for(let ds in props[attr]) elem.dataset[ds] = props[attr][ds];
+                for(let ds in value) elem.dataset[ds] = value[ds];
                 break;
             case "style":
                 /**
@@ -235,7 +236,7 @@ domCrawler.createElement = (tagName, props = null, ...children) => {
                 else for(let sp in props.style) elem.style[sp] = props.style[sp];
                 break;
             default:
-                elem.setAttribute(attr, props[attr]);
+                elem.setAttribute(attr, value);
         }
     }
     elem.append(...children);

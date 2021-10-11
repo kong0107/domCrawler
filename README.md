@@ -2,10 +2,6 @@
 
 Traverse all nodes within the specified node.
 
-This module does not support IE yet.
-
-Further instructions are written in `domCrawler.js`.
-
 
 ## Installation
 
@@ -64,8 +60,11 @@ domCrawler.replaceTexts(
 
 ## Changelog
 
+### 1.3.4
+* Fix the error which `domCrawler.createElement(tagName, {className: "foo"})` occurs after v1.3.3.
+
 ### 1.3.3
-* Fix the error that `domCrawler.createElement(tagName, {class: "foo"})` did not assgin CSS class name to the element.
+* Fix the bug that `domCrawler.createElement(tagName, {class: "foo"})` did not assgin CSS class name to the element.
 
 ### 1.3.2
 * Make `wrapper` know which text node it's working on.
