@@ -5,46 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>domCrawler demo page</title>
     <script src="domCrawler.js"></script>
-    <style>em {color: red;}</style>
+    <style>
+        em {
+            color: red;
+        }
+        code {
+            display: block;
+            white-space: pre;
+            margin-left: -4em;
+        }
+        section {
+            border-top: 1px solid #bbb;
+            margin-top: 2em;
+        }
+        .target {
+            border-left: .25em solid gray;
+            padding: 0 .5em .5em;
+            margin: .5em;
+        }
+        .target::before {
+            content: "Target";
+            font-weight: bold;
+            margin-left: -1em;
+            border: 1px solid gray;
+            background-color: white;
+            display: inline-block;
+            padding: .2em;
+        }
+    </style>
   </head>
   <body>
     <h1>domCrawler demo page</h1>
-    <div id="ppap">
-        <p>I have a pen. I have an apple. Ugh! Apple pen.</p>
-        <p>I have a pen. I have a pineapple. Ugh! Pineapple pen.</p>
-        <p>Apple pen; pineapple pen. Ugh! Pen-pineapple-apple-pen.</p>
-    </div>
-    <button>Demo domCrawler.replaceTexts</button>
-    <pre></pre>
-    <p><a href="https://github.com/kong0107/domCrawler">Go to the project page on GitHub.</a></p>
-    <script id="code">
-        const rules = [
-            // replace text to text
-            {pattern: 'I', replacer: 'You'},
+    <p>Check source code and more info on <a href="https://github.com/kong0107/domCrawler">GitHub</a>.</p>
+    <section>
+        <h2>Demo 1</h2>
+        <div class="target" id="ppap">
+            <p>I have a pen. I have an apple. Ugh! Apple pen.</p>
+            <p>I have a pen. I have a pineapple. Ugh! Pineapple pen.</p>
+            <p>Apple pen; pineapple pen. Ugh! Pen-pineapple-apple-pen.</p>
+        </div>
+        <button id="btn1">Demostrate</button>
+        <code></code>
+        <script>
+            const ruleGroup = [
+                // replace text to text
+                {pattern: 'I', replacer: 'You'},
 
-            // replace text to cloned element
-            {pattern: 'Ugh!', replacer: domCrawler.createElement("EM", null, "Yeah!")},
+                // replace text to cloned element
+                {pattern: 'Ugh!', replacer: domCrawler.createElement("EM", null, "Yeah!")},
 
-            // replace by a function
-            {pattern: 'have', replacer: str => str.toUpperCase()},
+                // replace by a function
+                {pattern: 'have', replacer: str => str.toUpperCase()},
 
-            // RegExp is also support and the usage is just like `String#replace()`
-            {
-                pattern: /(pine)?apple/i,
-                replacer: ($0, $1) => {
-                    if($0.charAt(0) == $0.charAt(0).toUpperCase())
-                        return $1 ? "Coordination" : "Ordination";
-                    return $1 ? "coordination" : "ordination";
+                // RegExp is also support and the usage is just like `String#replace()`
+                {
+                    pattern: /(pine)?apple/i,
+                    replacer: ($0, $1) => {
+                        if($0.charAt(0) == $0.charAt(0).toUpperCase())
+                            return $1 ? "Coordination" : "Ordination";
+                        return $1 ? "coordination" : "ordination";
+                    }
                 }
-            }
-        ];
-    </script>
+            ];
+
+            document.getElementById("btn1").addEventListener("click", () =>
+                domCrawler.replaceTexts(ruleGroup, document.getElementById("ppap"))
+            );
+        </script>
+    </section>
+    <section>
+        <h2>Demo 2</h2>
+        <p>You can replace to some object temporarily, and then handle them with a wrapper.</p>
+        <p>Also note that each matched part can be replaced by more than one nodes.</p>
+        <div class="target" id="xxx">
+            <p>We shall know that xxx and yyy are different. Xxx means <a href="#">xxx</a>. Meanwhile, yyy is much like <a href="#">yyy</a>.</p>
+        </div>
+        <button id="btn2">Demostrate</button>
+        <code></code>
+        <script>
+            const ruleGroup2 = [
+                {
+                    pattern: /xxx/i,
+                    replacer: str => ({text: str, color: "green"})
+                },
+                {
+                    pattern: /yyy/i,
+                    replacer: str => ({text: str})
+                }
+            ];
+            const wrapper = function (splitted) {
+                let counter = 0; //< This is within one origin text node.
+                const result = [];
+                for(const piece of splitted) {
+                    if(typeof piece === "string") {
+                        result.push(piece);
+                        continue;
+                    }
+                    ++counter;
+                    result.push(domCrawler.createElement("A", {href: "#"}, piece.text));
+                    const color = piece.color || "red";
+                    result.push(domCrawler.createElement("SPAN", {style: `color: ${color}`}, `[${counter}]`));
+                }
+                if(counter) {
+                    console.debug(
+                        "the text node is splitted into",
+                        splitted,
+                        "and then going to be replaced by",
+                        result
+                    );
+                }
+                return result;
+            };
+            document.getElementById("btn2").addEventListener("click", () =>
+                domCrawler.replaceTexts(
+                    ruleGroup2,
+                    document.getElementById("xxx"),
+                    ["A", "SCRIPT", "STYLE"], ///< nodes within these HTML tags are skipped
+                    wrapper
+                )
+            );
+        </script>
+    </section>
     <script>
-        document.querySelector("button").addEventListener("click", event => {
-            domCrawler.replaceTexts(rules, document.querySelector("div"));
-            event.target.disabled = true;
+        document.querySelectorAll("code").forEach(codeElem => {
+            codeElem.textContent = codeElem.nextElementSibling.textContent.replace(/(^\n+)|(\n+ *$)/g, "");
         });
-        document.querySelector("PRE").textContent = document.getElementById("code").textContent.replace(/(^\n+)|(\n+ *$)/g, "");
+        document.querySelectorAll("button").forEach(button => {
+            button.addEventListener("click", () => button.disabled = true);
+        });
     </script>
   </body>
 </html>
