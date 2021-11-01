@@ -1,72 +1,61 @@
+"use strict";
+
 /**
  * Get all nodes within the specified node.
+ * @param {Node} [root] root of the TreeWalker traversal, default to `document`
+ * @param {function} [accept] tests and accepts descendants of `root` to be contained by the walker.
+ * @param {function} [reject] tests and rejects subtrees of `root` to be considered by the walker.
  * @returns {Array} nodes which fit `accept` but not within those fit `reject`
- */
-const domCrawler = (node, accept, reject) =>
-    domCrawler.map(node, n => n, accept, reject)
-;
-
-
-/**
- * Create an object that can be used as a `NodeFilter`.
  *
- * To developers:
- * For the feature of `FILTER_REJECT`, let's use `TreeWalker` instead of `NodeIterator`.
+ * `TreeWalker` instead of `NodeIterator` is used due to the feature of `FILTER_REJECT`.
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter }
- * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html#Traversal-NodeFilter-acceptNode-constants }
+ * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html }
  */
-domCrawler.createFilter = (
+const domCrawler = function (
+    root = document,
     accept = () => true,
     reject = () => false
-) => {
-    return {acceptNode: node => {
-        if(reject(node)) return NodeFilter.FILTER_REJECT;
-        if(accept(node)) return NodeFilter.FILTER_ACCEPT;
-        return NodeFilter.FILTER_SKIP;
-    }};
-};
+) {
+    accept = domCrawler.parseFilterRule(accept);
+    reject = domCrawler.parseFilterRule(reject);
+    const filter = {
+        acceptNode: node => {
+            if(reject(node)) return NodeFilter.FILTER_REJECT;
+            if(accept(node)) return NodeFilter.FILTER_ACCEPT;
+            return NodeFilter.FILTER_SKIP;
+        }
+    };
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, filter);
 
-
-/**
- * Call the function on filtered nodes and return the results.
- * Removing the node in the function may interrupt the traversal.
- * To move some nodes and then traverse throught the origin order, use `domCrawler` to get an array to iterate.
- * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html#Iterator-Robustness-h4 }
- */
-domCrawler.map = (node = document, func, accept, reject) => {
-    const treeWalker = document.createTreeWalker(
-        node,
-        NodeFilter.SHOW_ALL,
-        domCrawler.createFilter(accept, reject)
-    );
-    const result = [];
-    while(n = treeWalker.nextNode()) result.push(func(n));
+    let node, result = [];
+    while(node = walker.nextNode()) result.push(node);
     return result;
 };
+domCrawler.parseFilterRule = function (filterRule) {
+    if(filterRule instanceof Function) return filterRule;
+    if(filterRule instanceof Array) {
+        filterRule = filterRule.map(tag => tag.toUpperCase());
+        return node => filterRule.includes(node.tagName);
+    }
+    throw new TypeError("filter rule shall be a function or an array of texts");
+}
 
 
 /**
- * Traverse all text nodes.
- * Removing the node in the function may interrupt the traversal.
- * @see domCrawler.map
+ * Get all text nodes within the specified node.
+ * @returns {Array} text nodes in `root` but not within those fit `reject`
  *
  * To developers:
  * In `Document.createTreeWalker()`, `filter` is only called on nodes accepted by `whatToShow`.
  * So do not set `whatToShow` to `SHOW_TEXT` in createTreeWalker;
  * otherwise you cannot reject anything within the nodes you don't want.
  */
-domCrawler.mapTextNodes = (node, func, reject) =>
-    domCrawler.map(node, func, n => n.nodeType == 3, reject)
-;
-
-
-/**
- * Get all text nodes within the specified node.
- * @returns {Array} text nodes in `node` but not within those fit `reject`
- */
-domCrawler.getTextNodes = (node, reject) =>
-    domCrawler.mapTextNodes(node, n => n, reject)
-;
+domCrawler.getTextNodes = function (
+    root = document.body,
+    reject = ["SCRIPT", "STYLE"]
+) {
+    return domCrawler(root, node => node.nodeType === Node.TEXT_NODE, reject);
+};
 
 
 /**
@@ -81,7 +70,7 @@ domCrawler.getTextNodes = (node, reject) =>
  * @param {function} replacer Similar to what String#replace does.
  * @returns {Array} A merged list of splitted stuff and those returned by replacer in their original order.
  */
-domCrawler.strSplitAndJoin = (str, separator, replacer) => {
+domCrawler.strSplitAndJoin = function (str, separator, replacer) {
     if(typeof replacer != "function") {
         const temp = replacer;
         if(temp instanceof Node) replacer = () => temp.cloneNode(true);
@@ -111,13 +100,12 @@ domCrawler.strSplitAndJoin = (str, separator, replacer) => {
 /**
  * Replace text by the rules specified.
  * It just applies multi rules to `domCrawler.strSplitAndJoin`.
- * @param {Object[]} rules
  * @param {string|RegExp} rules[].pattern
- * @param {string|function|Node} rules[].replacer
- * @param {number} rules[].minLength
+ * @param {string|function|Node} rules[].replacer same in `strSplitAndJoin`
+ * @param {number} rules[].minLength minimum length that the rule applies
  */
-domCrawler.strSplitAndJoinByRules = (str, rules) => {
-    if(!rules.forEach) rules = [rules];
+domCrawler.strSplitAndJoinByRules = function (str, rules) {
+    if(!(rules instanceof Array)) rules = [rules];
     return rules.reduce((splitted, rule) => {
         for(let i = splitted.length - 1; i >= 0; --i) {
             const frag = splitted[i];
@@ -133,58 +121,56 @@ domCrawler.strSplitAndJoinByRules = (str, rules) => {
 
 /**
  * Replaces texts in one text node by the rules and the wrapper.
+ * @param {Text} textNode the text node to be replaced.
+ * @param {Object[]} rules see `strSplitAndJoinByRules`
+ * @param {function} [wrapper] After all `rules` are applied, the result array is passed by `wrapper` before replacing the origin text node.
+ * @param {function} [callback] triggers after a text node is replaced
  * @returns {Node[]} array of nodes the initial text node is replaced by.
  */
-domCrawler.replaceTextNode = (textNode, rules, wrapper = null) => {
-    let splitted = domCrawler.strSplitAndJoinByRules(textNode.textContent, rules);
-    if(typeof wrapper === "function") splitted = wrapper.call(textNode, splitted, textNode);
-    if(splitted.length === 1 && splitted[0] === textNode.textContent) return;
-    textNode.replaceWith(...splitted);
-};
-
-
-/**
- * Replaces texts in the node by the rules specified.
- * To minimize DOM manipulation, let's iterate rules within the iteration of text nodes.
- * HTML tags SCRIPT and STYLE are skipped if `reject` is not specified.
- * @param {Object[]} rules
- * @param {string|RegExp} rules[].pattern
- * @param {*} rules[].replacer
- * @param {number} rules[].minLength
- * @param {function} wrapper - This is called on the whole array `strSplitAndJoinByRules` returned. Afterwards the returned array this function returns will replace the origin content of the text node.
- */
-domCrawler.replaceTexts = (
+domCrawler.replaceTextNode = function (
+    textNode,
     rules,
-    node = document,
-    reject = n => ["SCRIPT", "STYLE"].includes(n.nodeName),
-    wrapper = null
-) => {
-    domCrawler.getTextNodes(node, reject).forEach(textNode =>
-        domCrawler.replaceTextNode(textNode, rules, wrapper)
-    );
-    node.normalize();
-};
-
-
-/**
- * Async version of the above.
- * @param {number} microseconds the process should wait after replacing one text node
- * @returns {Promise} resolves to undefined
- */
-domCrawler.replaceTextsAsync = (
-    rules,
-    node = document,
-    reject = n => ["SCRIPT", "STYLE"].includes(n.nodeName),
     wrapper = null,
-    delay = 0
-) => {
-    const wait = ms => () => new Promise(resolve => setTimeout(resolve, ms));
-    return domCrawler.getTextNodes(node, reject).map(textNode =>
-        () => domCrawler.replaceTextNode(textNode, rules, wrapper)
-    ).reduce(
-        (acc, cur) => acc.then(cur).then(wait(delay)),
-        Promise.resolve()
-    ).then(() => node.normalize());
+    callback = null
+) {
+    const parent = textNode.parentNode;
+    const splitted = domCrawler.strSplitAndJoinByRules(textNode.textContent, rules);
+    const newNodes = (typeof wrapper !== "function") ? splitted : wrapper.call(textNode, splitted, textNode);
+    const changed = newNodes.length !== 1 || newNodes[0] != textNode.textContent;
+    if(changed) textNode.replaceWith(...newNodes);
+    if(typeof callback === "function") callback.call(textNode, newNodes, parent, textNode, changed);
+    return newNodes;
+};
+
+
+/**
+ * Replaces texts in the node by the rules specified, in sync or async way.
+ * If `delay` is set to a number greater than 0, then this works asynchronously and returns a promise;
+ * otherwise, this works synchronously and returns nothing.
+ * Defaults to handle nodes in `document.body` but ignore those in `script` and `style` tags.
+ * @param {Object[]} rules see `strSplitAndJoinByRules`
+ * @param {function} [wrapper] see `replaceTextNode`
+ * @param {function} [callback] see `replaceTextNode`
+ * @param {integer} [delay] milliseconds the process should wait after replacing a group of text nodes.
+ * @param {integer} [size] number of text nodes a group shall contain
+ */
+domCrawler.replaceTexts = async function (
+    rules,
+    root = document.body,
+    reject = ["SCRIPT", "STYLE"],
+    wrapper = null,
+    callback = null,
+    delay = 0,
+    size = 1
+) {
+    const textNodes = domCrawler.getTextNodes(root, reject);
+    for(let i = 0; i < textNodes.length; ++i) {
+        if(delay > 0) {
+            if(!i) await Promise.resolve();
+            else if(!(i % size)) await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        domCrawler.replaceTextNode(textNodes[i], rules, wrapper, callback);
+    }
 };
 
 
@@ -201,7 +187,7 @@ domCrawler.replaceTextsAsync = (
  * @param {Object} [props.data] synonyms of the above `props.dataset`
  * @returns {Element}
  */
-domCrawler.createElement = (tagName, props = null, ...children) => {
+domCrawler.createElement = function (tagName, props = null, ...children) {
     const elem = document.createElement(tagName);
     for(let attr in props) {
         const value = props[attr];

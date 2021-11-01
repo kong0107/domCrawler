@@ -32,7 +32,7 @@ nodes = domCrawler(
 nodes = domCrawler.getTextNodes(
   document.body,
   node => /^\s*$/.test(node.textContent)
-)
+);
 
 ```
 
@@ -60,6 +60,15 @@ domCrawler.replaceTexts(
 
 ## Changelog
 
+### 1.4.0
+* Deprecate calling `Node.normalize()` since it causes error on websites.
+* Deprecate `domCrawler.map()`.
+* Mechanism of `domCrawler.replaceTexts()`:
+  * Deprecate `domCrawler.replaceTextAsync()`; async usage is combined into `domCrawler.replaceTexts()`.
+  * Add parameter `callback` that can be assigned and executed each time AFTER a text node is replaced.
+    Also note that parameter `wrapper` is called BEFORE the text node is actually replaced.
+  * Add parameter `size` which assigns the group size of text nodes to be replaced continuously in async mode.
+
 ### 1.3.4
 * Fix the error which `domCrawler.createElement(tagName, {className: "foo"})` occurs after v1.3.3.
 
@@ -73,4 +82,4 @@ domCrawler.replaceTexts(
 *	Users can design `replacer` of rules more like what they do while using `String#replace`.
 
 ### 1.3.0
-* Add `domCrawler.replaceTextsAsync`, which is the async version of `domCrawler.replaceTexts` and return a promise which resolves after traverse all text nodes.
+* Add `domCrawler.replaceTextsAsync()`, which is the async version of `domCrawler.replaceTexts()` and return a promise which resolves after traverse all text nodes.

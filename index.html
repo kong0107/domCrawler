@@ -19,9 +19,16 @@
     <p><a href="https://github.com/kong0107/domCrawler">Go to the project page on GitHub.</a></p>
     <script id="code">
         const rules = [
+            // replace text to text
             {pattern: 'I', replacer: 'You'},
+
+            // replace text to cloned element
             {pattern: 'Ugh!', replacer: domCrawler.createElement("EM", null, "Yeah!")},
+
+            // replace by a function
             {pattern: 'have', replacer: str => str.toUpperCase()},
+
+            // RegExp is also support and the usage is just like `String#replace()`
             {
                 pattern: /(pine)?apple/i,
                 replacer: ($0, $1) => {
@@ -31,12 +38,13 @@
                 }
             }
         ];
-        document.querySelector("button").addEventListener("click", () =>
-            domCrawler.replaceTexts(rules, document.querySelector("div"))
-        );
     </script>
     <script>
-        document.querySelector("PRE").textContent = document.getElementById("code").textContent;
+        document.querySelector("button").addEventListener("click", event => {
+            domCrawler.replaceTexts(rules, document.querySelector("div"));
+            event.target.disabled = true;
+        });
+        document.querySelector("PRE").textContent = document.getElementById("code").textContent.replace(/(^\n+)|(\n+ *$)/g, "");
     </script>
   </body>
 </html>
