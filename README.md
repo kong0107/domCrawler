@@ -1,6 +1,11 @@
 # domCrawler
 
-Traverse all nodes within the specified node.
+Traverse all nodes within the specified node in DOM tree.
+
+Though elements can be selected by `Element.querySelectorAll()`, this project is for those who want:
+* get text nodes, and maybe replace them by elements
+* get nodes besides elements, such as texts and comments (see [Node.nodeType](https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType))
+* get elements NOT within something else
 
 
 ## Installation
@@ -18,20 +23,29 @@ See also [demo page](https://kong0107.github.io/domCrawler/).
 ### Get nodes
 
 ```javascript
-/// gets an array contains all nodes in document
+/// gets an array contains all nodes in document, including text nodes, comments, and even `<!DOCTYPE html>`
 nodes = domCrawler();
 
-/// gets all buttons not within forms.
-nodes = domCrawler(
-  document.body,
-  node => node.tagName == "BUTTON",
-  node => node.tagName == "FORM"
-);
+/// gets an array contains only elements
+nodes = domCrawler(document, "*");
 
-/// gets only nodes containing non-space characters
+/// gets all buttons not within forms.
+nodes = domCrawler(document.body, "button, input[type=button], input[type=submit]", "form");
+
+/// gets all form elements
+nodes = domCrawler(document.body, ["input", "select", "textarea", "button"]);
+
+/// gets all comment nodes
+nodes = domCrawler(document, node => node.nodeType === Node.COMMENT_NODE);
+
+/// to get text nodes except those within JS and CSS tags
+nodes = domCrawler(document.body, node => node.nodeType === Node.TEXT_NODE, ["script", "style"]);
+nodes = domCrawler.getTextNodes(); //< or use this syntactic sugar
+
+/// gets text nodes but ignore those containing only spaces
 nodes = domCrawler.getTextNodes(
   document.body,
-  node => /^\s*$/.test(node.textContent)
+  node => /^\s+$/.test(node.textContent)
 );
 
 ```
@@ -46,14 +60,11 @@ domCrawler.replaceTexts({
 });
 
 // emphasize some words in the page
-replacer = text => domCrawler.createElement("EM", null, text);
-domCrawler.replaceTexts(
-  [
-    {pattern: "banana", replacer: replacer},
-    {pattern: /(pine)?apple/, replacer: replacer},
-  ],
-  document.body
-);
+emWrapper = text => domCrawler.createElement("EM", null, text);
+domCrawler.replaceTexts([
+  {pattern: "banana", replacer: emWrapper},
+  {pattern: /(pine)?apple/, replacer: emWrapper},
+]);
 
 ```
 
@@ -61,13 +72,17 @@ domCrawler.replaceTexts(
 ## Changelog
 
 ### 1.4.0
-* Deprecate calling `Node.normalize()` since it causes error on websites.
 * Deprecate `domCrawler.map()`.
 * Mechanism of `domCrawler.replaceTexts()`:
   * Deprecate `domCrawler.replaceTextAsync()`; async usage is combined into `domCrawler.replaceTexts()`.
   * Add parameter `callback` that can be assigned and executed each time AFTER a text node is replaced.
     Also note that parameter `wrapper` is called BEFORE the text node is actually replaced.
   * Add parameter `size` which assigns the group size of text nodes to be replaced continuously in async mode.
+  * Deprecate calling `Node.normalize()` since it causes error on websites.
+* Support different ways to assign filter, including:
+  * function in which nodes are passed one by one
+  * CSS selector string
+  * array of HTML tags
 
 ### 1.3.4
 * Fix the error which `domCrawler.createElement(tagName, {className: "foo"})` occurs after v1.3.3.

@@ -4,20 +4,33 @@
  * Get all nodes within the specified node.
  * @param {Node} [root] root of the TreeWalker traversal, default to `document`
  * @param {function} [accept] tests and accepts descendants of `root` to be contained by the walker.
+ * @param {string} [accept] a CSS selector string which is used to filter elements
+ * @param {string[]} [accept] HTML tags which are to be filtered
  * @param {function} [reject] tests and rejects subtrees of `root` to be considered by the walker.
  * @returns {Array} nodes which fit `accept` but not within those fit `reject`
- *
- * `TreeWalker` instead of `NodeIterator` is used due to the feature of `FILTER_REJECT`.
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter }
- * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html }
  */
 const domCrawler = function (
     root = document,
     accept = () => true,
     reject = () => false
 ) {
-    accept = domCrawler.parseFilterRule(accept);
-    reject = domCrawler.parseFilterRule(reject);
+    /**
+     * If none of selector is function, then only elements are considered and text nodes are ignored.
+     * In this case, we use `Element.querySelectorAll()`; otherwise, `TreeWalker` is the option.
+     * `NodeIterator` is not considered here since it does not support `FILTER_REJECT`.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter }
+     * @see {@link https://www.w3.org/TR/DOM-Level-2-Traversal-Range/traversal.html }
+     */
+    if(typeof accept !== "function" && typeof reject !== "function") {
+        if(accept instanceof Array) accept = accept.join(",");
+        if(reject instanceof Array) reject = reject.join(",");
+        const acceptedElems = Array.from(root.querySelectorAll(accept));
+        const rejectedElems = Array.from(root.querySelectorAll(reject));
+        return acceptedElems.filter(elem => !rejectedElems.some(rejected => rejected.contains(elem)));
+    }
+
+    accept = domCrawler.parseSelector(accept, root);
+    reject = domCrawler.parseSelector(reject, root);
     const filter = {
         acceptNode: node => {
             if(reject(node)) return NodeFilter.FILTER_REJECT;
@@ -31,14 +44,18 @@ const domCrawler = function (
     while(node = walker.nextNode()) result.push(node);
     return result;
 };
-domCrawler.parseFilterRule = function (filterRule) {
-    if(filterRule instanceof Function) return filterRule;
+domCrawler.parseSelector = function (filterRule, root) {
+    if(typeof filterRule === "function") return filterRule;
+    if(typeof filterRule === "string") {
+        const elements = Array.from(root.querySelectorAll(filterRule));
+        return node => elements.includes(node);
+    }
     if(filterRule instanceof Array) {
         filterRule = filterRule.map(tag => tag.toUpperCase());
         return node => filterRule.includes(node.tagName);
     }
-    throw new TypeError("filter rule shall be a function or an array of texts");
-}
+    throw new TypeError("selector shall be a function, a CSS selector string, or an array of strings representing HTML tags.");
+};
 
 
 /**
